@@ -10,8 +10,7 @@ bsb_work/
 .Rproj.user/
 .Rhistory
 .RData
-renv/library/
-renv/staging/
+# renv/library, renv/staging etc. are excluded by renv's own renv/.gitignore
 
 # Python
 __pycache__/

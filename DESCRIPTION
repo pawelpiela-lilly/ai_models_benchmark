@@ -1,0 +1,8 @@
+Package: biostatbench
+Type: Project
+Title: BioStatBench analysis dependencies
+Description: Not an installable package. Lists the R packages the analysis
+    scripts (analysis/scoring_and_inference.R, analysis/factorial_analysis.R)
+    depend on, for renv::snapshot(type = "explicit").
+Imports:
+    lme4
