@@ -1,0 +1,41 @@
+{
+  "runner_version": "0.1",
+  "claude_version": "2.1.220 (Claude Code)",
+  "started": "2026-08-07T09:33:33Z",
+  "split": "public",
+  "arms": [
+    {
+      "model": "opus-latest",
+      "effort": "medium",
+      "bare": true,
+      "tools": null,
+      "allowed_tools": [
+        "Bash",
+        "Read",
+        "Edit",
+        "Write",
+        "Grep",
+        "Glob"
+      ],
+      "denied_tools": [
+        "WebSearch",
+        "WebFetch",
+        "mcp__*"
+      ],
+      "permission_mode": "acceptEdits",
+      "max_turns": 30,
+      "max_budget_usd": 1.0,
+      "allow_web": false
+    }
+  ],
+  "n_items": 11,
+  "replicates": 2,
+  "denied_tools": [
+    "WebSearch",
+    "WebFetch",
+    "mcp__*"
+  ],
+  "web_allowed": false,
+  "bare": true,
+  "keys_dir_outside_work_root": true
+}

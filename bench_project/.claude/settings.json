@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(_keys/**)",
+      "Read(items/private/**)",
+      "Grep(_keys/**)",
+      "Grep(items/private/**)",
+      "Glob(_keys/**)",
+      "Glob(items/private/**)",
+      "Bash(cat _keys/*)",
+      "Bash(cat items/private/*)",
+      "Bash(grep * _keys*)",
+      "Bash(grep * items/private*)"
+    ]
+  }
+}

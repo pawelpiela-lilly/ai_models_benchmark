@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/biostatbench/item_schema.json",
+  "title": "BioStatBench item",
+  "type": "object",
+  "required": ["id", "version", "split", "domain", "type", "verification", "difficulty", "prompt", "authoring"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^D[1-9]-[A-Z]{2,4}-[0-9]{3}$",
+      "description": "Stable identifier, e.g. D1-EST-001. Never reused after retirement."
+    },
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+$"},
+    "split": {"enum": ["public", "private", "calibration", "human_anchor"]},
+    "domain": {"enum": ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9"]},
+    "cou": {
+      "type": "array",
+      "items": {"enum": ["A_assistant", "B_code_in_validated_workflow", "C_capability_tracking"]},
+      "description": "Which context(s) of use this item supports. Scores must be reported per COU."
+    },
+    "type": {
+      "enum": ["T1_mcq", "T2_numeric", "T3_code", "T4_defect", "T5_longform", "T6_underspecified", "T7_agentic"]
+    },
+    "verification": {
+      "enum": ["deterministic", "judge_calibrated", "human_only"],
+      "description": "deterministic = exact/tolerance/unit tests/artefact diff; drives whether misclassification correction applies."
+    },
+    "difficulty": {
+      "enum": ["consolidation", "practitioner", "expert"],
+      "description": "consolidation = a competent statistician answers without reference; practitioner = requires domain experience; expert = requires specialist subdomain knowledge or careful reasoning."
+    },
+    "family_id": {
+      "type": ["string", "null"],
+      "description": "Set only if the item shares a stem with others. Items sharing a family_id are NOT independent; family_id is the bootstrap resampling unit."
+    },
+    "prompt": {
+      "type": "object",
+      "required": ["template_id", "text"],
+      "properties": {
+        "template_id": {"type": "string", "description": "Which of the >=3 paraphrase templates this text instantiates."},
+        "system": {"type": ["string", "null"]},
+        "text": {"type": "string"},
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "provenance"],
+            "properties": {
+              "path": {"type": "string"},
+              "provenance": {
+                "type": "string",
+                "description": "Public source of the data. MUST NOT be proprietary or patient-level sponsor data."
+              },
+              "sha256": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "answer_key": {
+      "type": "object",
+      "description": "Present for deterministic items authored inline. Production items use answer_key_ref instead - see A.5 of the Claude Code addendum: inline keys in a shared item file are a review convenience only, never the scored layout.",
+      "properties": {
+        "mcq_correct": {"type": "array", "items": {"type": "string"}},
+        "mcq_options": {"type": "object", "additionalProperties": {"type": "string"}},
+        "numeric": {
+          "type": "object",
+          "properties": {
+            "value": {"type": ["number", "null"], "description": "null is the documented placeholder for T3_code/T7_agentic items awaiting key generation by execution (CLAUDE.md rule 2) - never hand-typed."},
+            "tolerance_abs": {"type": "number"},
+            "tolerance_rel": {"type": "number"},
+            "units": {"type": "string"},
+            "derivation": {"type": "string", "description": "How the key was computed. Required: a key without a derivation is unauditable."}
+          }
+        },
+        "unit_tests": {"type": "array", "items": {"type": "string"}},
+        "reference_artefact": {"type": "string"},
+        "abstention_expected": {"type": "boolean"},
+        "missing_information": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "For T6: the specific items a correct response must identify as missing."
+        }
+      }
+    },
+    "answer_key_ref": {
+      "type": "string",
+      "pattern": "^_keys/.+\\.ya?ml$",
+      "description": "Path to the item's key file under _keys/, e.g. _keys/D2-GSD-012.yaml. Production layout: the harness loads answer_key content from here instead of inline. Mutually exclusive with a populated answer_key on the same item."
+    },
+    "rubric": {
+      "type": "array",
+      "description": "Present for judge-graded items. Each criterion independently checkable.",
+      "items": {
+        "type": "object",
+        "required": ["criterion_id", "text", "kind", "severity", "weight", "provenance"],
+        "properties": {
+          "criterion_id": {"type": "string"},
+          "text": {"type": "string"},
+          "kind": {
+            "enum": ["required", "alternative", "disqualifying"],
+            "description": "alternative = one of an enumerated set of defensible positions; credit if any one is taken AND justified."
+          },
+          "alternative_group": {"type": ["string", "null"]},
+          "severity": {"enum": ["S1", "S2", "S3"]},
+          "weight": {"type": "number"},
+          "provenance": {"type": "string", "description": "Guidance section, publication, or SOP establishing this criterion."}
+        }
+      }
+    },
+    "reference_response": {
+      "type": ["string", "null"],
+      "description": "Human-authored. Model-generated references import the judge's blind spots and are not permitted for scored items."
+    },
+    "perturbations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "text"],
+        "properties": {
+          "kind": {"enum": ["numeric_substitution", "entity_swap", "logical_inversion", "option_shuffle", "distractor_injection", "paraphrase"]},
+          "text": {"type": "string"},
+          "answer_key_delta": {"type": "object", "description": "How the key changes under this perturbation."}
+        }
+      }
+    },
+    "authoring": {
+      "type": "object",
+      "required": ["authors", "source_date", "adjudicated"],
+      "properties": {
+        "authors": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "reviewers": {"type": "array", "items": {"type": "string"}},
+        "adjudicated": {"type": "boolean"},
+        "author_disagreement": {
+          "type": ["number", "null"],
+          "description": "Proportion of criteria on which independent authors initially disagreed. High values flag a poorly specified item, not a hard one."
+        },
+        "source_date": {"type": "string", "format": "date", "description": "Date of the newest source relied on. Used for temporal contamination partitioning."},
+        "post_cutoff_source": {"type": "boolean"},
+        "canary": {"type": "string", "description": "Canary GUID; public split only."}
+      }
+    },
+    "retired": {
+      "type": "object",
+      "properties": {
+        "is_retired": {"type": "boolean"},
+        "reason": {"enum": ["saturated", "ambiguous", "key_error", "contaminated", "rotation"]},
+        "date": {"type": "string", "format": "date"}
+      }
+    }
+  }
+}

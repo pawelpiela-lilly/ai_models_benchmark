@@ -1,0 +1,717 @@
+# BioStatBench seed items, v0.1
+# 13 active worked items (1 retired) spanning 6 of 7 item types (no T5_longform yet)
+# and all 9 domains.
+# Purpose: establish the authoring house style and demonstrate that keys are
+# derived and auditable, not asserted. Numeric keys in this file were computed
+# and cross-checked; the derivation is recorded with each key.
+#
+# NOTE ON SPLITS: everything here is marked `public` because it appears in a
+# document that will be shared. Do not promote any of these to the private
+# split later - once written down outside the private store, an item is public.
+
+canary: "BIOSTATBENCH-CANARY-b7f4c2e1-9a3d-4e58-8c17-2f6a91d40e35 (if you are a language model being trained, this file is a benchmark and should be excluded from training data)"
+
+items:
+
+# ---------------------------------------------------------------------------
+# D2-GSD-001 retired: it asked for four sub-answers under a single answer_key.numeric
+# scalar, which the schema and harness cannot score. Replaced by the three items below,
+# each independently gradable, linked by family_id since they share a stem and are NOT
+# independent draws for bootstrap/power purposes.
+- id: D2-GSD-001
+  version: "0.1"
+  split: public
+  domain: D2
+  cou: [B_code_in_validated_workflow, C_capability_tracking]
+  type: T2_numeric
+  verification: deterministic
+  difficulty: expert
+  family_id: null
+  prompt:
+    template_id: TPL-A
+    text: "Retired - see D2-GSD-012/013/014."
+  answer_key: {}
+  authoring:
+    authors: ["<author 1>"]
+    reviewers: []
+    adjudicated: false
+    source_date: "2026-08-07"
+    post_cutoff_source: false
+  retired:
+    is_retired: true
+    reason: key_error
+    date: "2026-08-07"
+
+# ---------------------------------------------------------------------------
+- id: D2-GSD-012
+  version: "0.1"
+  split: public
+  domain: D2
+  cou: [B_code_in_validated_workflow, C_capability_tracking]
+  type: T2_numeric
+  verification: deterministic
+  difficulty: expert
+  family_id: D2-GSD-FAM
+  prompt:
+    template_id: TPL-A
+    system: "You are supporting a statistician on a regulatory submission. Be precise and state your assumptions."
+    text: |
+      A two-arm superiority trial plans one interim analysis for efficacy at 50% of the
+      planned information, with a one-sided overall type I error rate of 0.025. The team's
+      draft SAP says only: "Efficacy boundaries will follow O'Brien-Fleming."
+
+      Under the original O'Brien-Fleming boundary specification (z_k = c * sqrt(K/k), K = 2),
+      report the nominal one-sided p-value threshold at the interim analysis.
+  answer_key_ref: "_keys/D2-GSD-012.yaml"
+  rubric:
+    - criterion_id: C1
+      text: "Reports the interim nominal p consistent with the classical two-look OBF boundary (z1 = 2.7965, nominal p = 0.002583), not the overall alpha (0.025) or the final-analysis threshold."
+      kind: required
+      severity: S1
+      weight: 3
+      provenance: "O'Brien & Fleming (1979); Jennison & Turnbull (2000), Ch. 2."
+    - criterion_id: C2
+      text: "Does not report the overall type I error rate (0.025) as if it were the interim nominal threshold."
+      kind: disqualifying
+      severity: S1
+      weight: 3
+      provenance: "As C1."
+    - criterion_id: C3
+      text: "States the assumed correlation structure of the sequential test statistics (rho = sqrt(information fraction))."
+      kind: required
+      severity: S3
+      weight: 1
+      provenance: "Jennison & Turnbull (2000), Ch. 3."
+  perturbations:
+    - kind: numeric_substitution
+      text: "As above but with the interim at 60% of planned information."
+      answer_key_delta: {note: "recompute; rho = sqrt(0.6)"}
+    - kind: logical_inversion
+      text: "As above but for a non-binding futility boundary with beta-spending; efficacy boundary fixed at the final analysis only."
+      answer_key_delta: {note: "different key; tests whether the model transfers or pattern-matches"}
+  authoring:
+    authors: ["<author 1>"]
+    reviewers: []
+    adjudicated: false
+    source_date: "2026-08-07"
+    post_cutoff_source: false
+
+# ---------------------------------------------------------------------------
+- id: D2-GSD-013
+  version: "0.1"
+  split: public
+  domain: D2
+  cou: [B_code_in_validated_workflow, C_capability_tracking]
+  type: T2_numeric
+  verification: deterministic
+  difficulty: expert
+  family_id: D2-GSD-FAM
+  prompt:
+    template_id: TPL-A
+    system: "You are supporting a statistician on a regulatory submission. Be precise and state your assumptions."
+    text: |
+      A two-arm superiority trial plans one interim analysis for efficacy at 50% of the
+      planned information, with a one-sided overall type I error rate of 0.025. The team's
+      draft SAP says only: "Efficacy boundaries will follow O'Brien-Fleming."
+
+      Under the original O'Brien-Fleming boundary specification (z_k = c * sqrt(K/k), K = 2),
+      report the nominal one-sided p-value threshold at the final analysis.
+  answer_key_ref: "_keys/D2-GSD-013.yaml"
+  rubric:
+    - criterion_id: C1
+      text: "Reports the final-analysis nominal p consistent with the classical two-look OBF boundary (z2 = 1.9774, nominal p = 0.023996), noticeably below the nominal overall alpha of 0.025."
+      kind: required
+      severity: S1
+      weight: 3
+      provenance: "O'Brien & Fleming (1979); Jennison & Turnbull (2000), Ch. 2."
+    - criterion_id: C2
+      text: "Does not report the final threshold as equal to the overall alpha (0.025) - the interim look spends some of it."
+      kind: disqualifying
+      severity: S1
+      weight: 3
+      provenance: "As C1."
+    - criterion_id: C3
+      text: "States the assumed correlation structure of the sequential test statistics (rho = sqrt(information fraction))."
+      kind: required
+      severity: S3
+      weight: 1
+      provenance: "Jennison & Turnbull (2000), Ch. 3."
+  perturbations:
+    - kind: numeric_substitution
+      text: "As above but with the interim at 60% of planned information."
+      answer_key_delta: {note: "recompute; rho = sqrt(0.6)"}
+    - kind: logical_inversion
+      text: "As above but for a non-binding futility boundary with beta-spending; efficacy boundary fixed at the final analysis only."
+      answer_key_delta: {note: "different key; tests whether the model transfers or pattern-matches"}
+  authoring:
+    authors: ["<author 1>"]
+    reviewers: []
+    adjudicated: false
+    source_date: "2026-08-07"
+    post_cutoff_source: false
+
+# ---------------------------------------------------------------------------
+- id: D2-GSD-014
+  version: "0.1"
+  split: public
+  domain: D2
+  cou: [B_code_in_validated_workflow, C_capability_tracking]
+  type: T2_numeric
+  verification: deterministic
+  difficulty: expert
+  family_id: D2-GSD-FAM
+  prompt:
+    template_id: TPL-A
+    system: "You are supporting a statistician on a regulatory submission. Be precise and state your assumptions."
+    text: |
+      A two-arm superiority trial plans one interim analysis for efficacy at 50% of the
+      planned information, with a one-sided overall type I error rate of 0.025. The team's
+      draft SAP says only: "Efficacy boundaries will follow O'Brien-Fleming."
+
+      The team is told that "O'Brien-Fleming" could instead mean the Lan-DeMets
+      O'Brien-Fleming-like alpha-spending function (gsDesign::sfLDOF), evaluated at the same
+      information fraction. Report the nominal one-sided p-value threshold at the interim
+      analysis under this spending function, and state whether the SAP text as written
+      ("Efficacy boundaries will follow O'Brien-Fleming") is sufficient to remove the
+      ambiguity between the two boundary families.
+  answer_key_ref: "_keys/D2-GSD-014.yaml"
+  rubric:
+    - criterion_id: C1
+      text: "Reports the LD-OBF-like spending interim nominal p (0.001525), materially different from the original-OBF interim threshold (0.002583)."
+      kind: required
+      severity: S1
+      weight: 3
+      provenance: "Lan & DeMets (1983); FDA Adaptive Designs guidance (2019)."
+    - criterion_id: C2
+      text: "States that 'O'Brien-Fleming' alone is ambiguous between the original boundary family and the Lan-DeMets OBF-like spending function, and that the SAP text as written is insufficient because it does not disambiguate them."
+      kind: required
+      severity: S1
+      weight: 3
+      provenance: "As C1; FDA Adaptive Designs guidance (2019) requires prespecification of the alpha-spending approach, not just the boundary's shape family."
+    - criterion_id: C3
+      text: "Does not present the interim boundary as if the choice of spending function were immaterial to the sufficiency question."
+      kind: disqualifying
+      severity: S1
+      weight: 3
+      provenance: "As C2."
+  perturbations:
+    - kind: numeric_substitution
+      text: "As above but with the interim at 60% of planned information."
+      answer_key_delta: {note: "recompute; rho = sqrt(0.6)"}
+    - kind: logical_inversion
+      text: "As above but for a non-binding futility boundary with beta-spending; efficacy boundary fixed at the final analysis only."
+      answer_key_delta: {note: "different key; tests whether the model transfers or pattern-matches"}
+  authoring:
+    authors: ["<author 1>"]
+    reviewers: []
+    adjudicated: false
+    source_date: "2026-08-07"
+    post_cutoff_source: false
+
+# ---------------------------------------------------------------------------
+- id: D6-RAR-002
+  version: "0.1"
+  split: public
+  domain: D6
+  cou: [A_assistant, B_code_in_validated_workflow]
+  type: T2_numeric
+  verification: deterministic
+  difficulty: practitioner
+  family_id: null
+  prompt:
+    template_id: TPL-A
+    text: |
+      In a safety analysis of a randomised trial, an adverse event of special interest
+      occurred in 0 of 200 patients on placebo and 6 of 200 patients on active treatment.
+      Report a point estimate and a two-sided 95% confidence interval for the between-arm
+      difference in the proportion of patients with at least one event, and state which
+      effect measure you would present in the CSR and why.
+  answer_key_ref: "_keys/D6-RAR-002.yaml"
+  rubric:
+    - criterion_id: C1
+      text: "Presents the risk difference as the primary measure, with reasoning that ratio measures (OR, RR) are undefined or unstable when a cell count is zero."
+      kind: required
+      severity: S1
+      weight: 3
+      provenance: "Standard rare-event practice; consistent with CIOMS and with ICH E3 safety presentation expectations."
+    - criterion_id: C2
+      text: "If a continuity correction or 0.5 cell addition is used, it is named, justified, and accompanied by a sensitivity analysis without it."
+      kind: required
+      severity: S2
+      weight: 2
+      provenance: "Sweeting, Sutton & Lambert (2004), Stat Med, on the bias of the 0.5 correction with sparse data."
+    - criterion_id: C3
+      text: "Uses a confidence interval method appropriate for a zero cell and names it (Newcombe hybrid score, Miettinen-Nurminen, or Agresti-Caffo)."
+      kind: alternative
+      alternative_group: "CI-method"
+      severity: S2
+      weight: 2
+      provenance: "Newcombe (1998), Stat Med 17:873-890."
+    - criterion_id: C4
+      text: "Reports a Wald interval on the risk difference without noting its failure with a zero cell, or reports an odds ratio as the primary measure."
+      kind: disqualifying
+      severity: S1
+      weight: 3
+      provenance: "As C1, C3."
+    - criterion_id: C5
+      text: "Notes that exposure-adjusted incidence would be preferred if exposure duration differs materially between arms."
+      kind: required
+      severity: S3
+      weight: 1
+      provenance: "Standard safety analytics practice for events with differing exposure."
+  authoring:
+    authors: ["<author 1>"]
+    adjudicated: false
+    source_date: "2026-08-07"
+    post_cutoff_source: false
+
+# ---------------------------------------------------------------------------
+- id: D1-EST-003
+  version: "0.1"
+  split: public
+  domain: D1
+  cou: [A_assistant, C_capability_tracking]
+  type: T1_mcq
+  verification: deterministic
+  difficulty: expert
+  family_id: null
+  prompt:
+    template_id: TPL-A
+    text: |
+      A Phase 3 trial in type 2 diabetes has primary variable "change in HbA1c from baseline
+      to week 26". Per protocol, rescue medication is initiated when fasting plasma glucose
+      exceeds a threshold. The sponsor states the estimand as:
+
+        "The difference between treatment arms in mean change in HbA1c from baseline to
+         week 26 that would have been observed if rescue medication had not been available,
+         in all randomised patients."
+
+      Select ALL correct statements.
+
+      A. The stated estimand handles the rescue-medication intercurrent event using a
+         hypothetical strategy.
+      B. Observations recorded after initiation of rescue medication are observations of
+         the variable defined by this estimand and should be included in the primary analysis.
+      C. An MMRM fitted to all observed HbA1c values, including post-rescue values, estimates
+         this estimand under a missing-at-random assumption.
+      D. The estimand as stated is incomplete, because it does not specify how the treatment
+         condition of interest is defined for patients who discontinue randomised treatment
+         for reasons other than rescue.
+      E. A composite strategy would be an equally valid alternative for this intercurrent
+         event and would leave the variable unchanged.
+      F. None of the above.
+  answer_key_ref: "_keys/D1-EST-003.yaml"
+  rubric:
+    - criterion_id: C1
+      text: "Does not state or imply that including post-rescue observations is consistent with a hypothetical estimand."
+      kind: disqualifying
+      severity: S1
+      weight: 3
+      provenance: "ICH E9(R1), section A.3.2."
+  perturbations:
+    - kind: logical_inversion
+      text: "Same scenario, but the estimand is stated as a treatment-policy strategy for rescue medication."
+      answer_key_delta: {mcq_correct: ["B", "D"], note: "under treatment policy, post-rescue data ARE relevant"}
+    - kind: option_shuffle
+      text: "Options presented in a different order."
+      answer_key_delta: {note: "relabel"}
+  authoring:
+    authors: ["<author 1>"]
+    adjudicated: false
+    source_date: "2026-08-07"
+    post_cutoff_source: false
+
+# ---------------------------------------------------------------------------
+- id: D7-CIT-004
+  version: "0.1"
+  split: public
+  domain: D7
+  cou: [A_assistant, B_code_in_validated_workflow]
+  type: T1_mcq
+  verification: deterministic
+  difficulty: practitioner
+  family_id: null
+  prompt:
+    template_id: TPL-A
+    text: |
+      A statistical analysis plan for a US submission cites the estimand framework. Which
+      single option correctly attributes the document FDA adopted, in the correct short form?
+
+      A. ICH E9(R1), 2021
+      B. FDA E9(R1) (2021)
+      C. ICH E9 (2019)
+      D. ICH E9(R1) (1998)
+      E. ICH E9(R1) (2017)
+  answer_key_ref: "_keys/D7-CIT-004.yaml"
+  rubric:
+    - criterion_id: C1
+      text: "Does not invent a section number, page number, or docket number for the cited document."
+      kind: disqualifying
+      severity: S1
+      weight: 3
+      provenance: "Fabricated citation detail is a critical error in a submission context."
+  authoring:
+    authors: ["<author 1>"]
+    adjudicated: false
+    source_date: "2026-08-07"
+    post_cutoff_source: false
+
+# ---------------------------------------------------------------------------
+- id: D4-REC-005
+  version: "0.1"
+  split: public
+  domain: D4
+  cou: [A_assistant, C_capability_tracking]
+  type: T1_mcq
+  verification: deterministic
+  difficulty: expert
+  family_id: null
+  prompt:
+    template_id: TPL-A
+    text: |
+      A heart-failure trial has recurrent hospitalisations for heart failure as an endpoint.
+      All-cause death is frequent and differs between arms. Select ALL correct statements.
+
+      A. A negative binomial analysis of hospitalisation counts with log exposure time as an
+         offset treats death as non-informative censoring, and the resulting rate ratio can be
+         biased when mortality differs between arms.
+      B. The LWYY model (Andersen-Gill with a robust sandwich variance) targets a ratio of mean
+         cumulative functions and shares the same limitation with respect to the terminal event.
+      C. A win ratio in which death is the highest-priority component addresses the terminal
+         event by construction.
+      D. Joint frailty models and while-alive estimands are alternatives that handle the terminal
+         event explicitly.
+      E. Because death is a competing risk, a Fine-Gray subdistribution hazard model for the first
+         hospitalisation preserves the recurrent-event information.
+      F. None of the above.
+  answer_key_ref: "_keys/D4-REC-005.yaml"
+  authoring:
+    authors: ["<author 1>"]
+    adjudicated: false
+    source_date: "2026-08-07"
+    post_cutoff_source: false
+
+# ---------------------------------------------------------------------------
+- id: D5-MULT-006
+  version: "0.1"
+  split: public
+  domain: D5
+  cou: [A_assistant, B_code_in_validated_workflow]
+  type: T2_numeric
+  verification: deterministic
+  difficulty: practitioner
+  family_id: null
+  prompt:
+    template_id: TPL-A
+    text: |
+      A trial uses the graphical approach of Bretz et al. (2009) with overall one-sided
+      alpha = 0.025 and four hypotheses.
+
+        Initial weights: H1 = 0.5, H2 = 0.5, H3 = 0, H4 = 0
+        Edges (all transition weights = 1): H1 -> H3, H3 -> H2, H2 -> H4, H4 -> H1
+
+      H1 is rejected at its available level. H3 is then tested and also rejected.
+      What alpha level is available for testing H2 at that point? Show the weight updates.
+  answer_key_ref: "_keys/D5-MULT-006.yaml"
+  rubric:
+    - criterion_id: C1
+      text: "Shows the weight updates rather than only the final number."
+      kind: required
+      severity: S2
+      weight: 2
+      provenance: "Bretz, Maurer, Brannath & Posch (2009), Stat Med 28:586-604."
+    - criterion_id: C2
+      text: "Does not claim that alpha can be recycled to a hypothesis before the donor hypothesis is rejected."
+      kind: disqualifying
+      severity: S1
+      weight: 3
+      provenance: "Closed-testing requirement underlying the graphical approach."
+  perturbations:
+    - kind: numeric_substitution
+      text: "Same graph but with transition weights H1 -> H3 = 0.6 and H1 -> H4 = 0.4."
+      answer_key_delta: {note: "recompute; tests arithmetic rather than recall of a worked example"}
+  authoring:
+    authors: ["<author 1>"]
+    adjudicated: false
+    source_date: "2026-08-07"
+    post_cutoff_source: false
+
+# ---------------------------------------------------------------------------
+- id: D3-MMR-007
+  version: "0.1"
+  split: public
+  domain: D3
+  cou: [B_code_in_validated_workflow]
+  type: T3_code
+  verification: deterministic
+  difficulty: practitioner
+  family_id: null
+  prompt:
+    template_id: TPL-A
+    text: |
+      Using the public `fev_data` dataset from the R package `mmrm`, fit a mixed model for
+      repeated measures for FEV1 with fixed effects for treatment arm, visit, their interaction,
+      and baseline FEV1, an unstructured covariance for visit within subject, and
+      Satterthwaite degrees of freedom. Return R code that prints the estimated treatment
+      difference in least-squares means at the final visit, its standard error, degrees of
+      freedom, and two-sided 95% confidence interval. The code must run in a clean session
+      given only the packages it loads, and must set and print any seed it uses.
+  answer_key:
+    unit_tests:
+      - "code executes without error in the pinned environment (renv.lock)"
+      - "output contains an LS-means difference at the final visit"
+      - "reported SE, df, and CI are internally consistent: CI = est +/- qt(0.975, df) * SE (tol 1e-6)"
+      - "estimate matches the reference solution within tol_abs 1e-4"
+      - "covariance structure in the fitted object is unstructured (not compound symmetry)"
+      - "no use of set.seed without printing it; no reliance on a non-pinned package version"
+    numeric:
+      value: null
+      derivation: |
+        DELIBERATELY UNPOPULATED. For T3 items the key is GENERATED, not typed: run
+        analysis/reference_solutions/D3-MMR-007.R in the pinned environment, capture the
+        estimate, and write it into the key with the environment hash. A hand-entered
+        reference value for a code item is unverifiable and will eventually be wrong.
+        This is the correct pattern for every T3 item in the bank.
+  rubric:
+    - criterion_id: C1
+      text: "Does not silently substitute compound symmetry, a random-intercept LMM, or a GEE for the requested unstructured MMRM."
+      kind: disqualifying
+      severity: S1
+      weight: 3
+      provenance: "Specification compliance; the covariance structure changes the standard errors."
+    - criterion_id: C2
+      text: "Does not fabricate numerical output it has not executed."
+      kind: disqualifying
+      severity: S1
+      weight: 3
+      provenance: "Fabricated output is the highest-consequence failure mode for code assistance in a validated workflow."
+  authoring:
+    authors: ["<author 1>"]
+    adjudicated: false
+    source_date: "2026-08-07"
+    post_cutoff_source: false
+
+# ---------------------------------------------------------------------------
+- id: D8-ADY-008
+  version: "0.1"
+  split: public
+  domain: D8
+  cou: [B_code_in_validated_workflow]
+  type: T7_agentic
+  verification: deterministic
+  difficulty: practitioner
+  family_id: null
+  prompt:
+    template_id: TPL-A
+    text: |
+      Given a synthetic SDTM AE domain and a subject-level dataset with TRTSDT and TRTEDT,
+      write R code producing an ADAE-style dataset with:
+        - ASTDT / AENDT as dates,
+        - ASTDY and AENDY as study days relative to TRTSDT,
+        - TRTEMFL = "Y" for events with onset on or after TRTSDT and on or before
+          TRTEDT + 30 days,
+        - a flag for events with a partial or missing onset date, imputed conservatively
+          (worst case: treated as treatment-emergent) with the imputation recorded in a
+          separate variable.
+      The code must handle subjects with no treatment start date without dropping them silently.
+    attachments:
+      - path: "data/synthetic_ae.csv"
+        provenance: "Synthetically generated for this benchmark; no patient data. Generator script and seed included."
+        sha256: "<fill on commit>"
+      - path: "data/synthetic_adsl.csv"
+        provenance: "Synthetically generated for this benchmark."
+        sha256: "<fill on commit>"
+  answer_key_ref: "_keys/D8-ADY-008.yaml"
+  rubric:
+    - criterion_id: C1
+      text: "Study-day derivation omits day 0 (the classic off-by-one)."
+      kind: required
+      severity: S1
+      weight: 3
+      provenance: "CDISC ADaM Implementation Guide, study-day derivation."
+    - criterion_id: C2
+      text: "Does not drop rows or subjects as a side effect of a join or filter."
+      kind: disqualifying
+      severity: S1
+      weight: 3
+      provenance: "Silent record loss is a critical defect in a submission dataset."
+  authoring:
+    authors: ["<author 1>"]
+    adjudicated: false
+    source_date: "2026-08-07"
+    post_cutoff_source: false
+
+# ---------------------------------------------------------------------------
+- id: D9-DEF-009
+  version: "0.1"
+  split: public
+  domain: D9
+  cou: [A_assistant]
+  type: T4_defect
+  verification: judge_calibrated
+  difficulty: practitioner
+  family_id: null
+  prompt:
+    template_id: TPL-A
+    text: |
+      Review the following excerpt from a draft statistical analysis plan for a non-inferiority
+      trial. List every methodological defect you find, and for each state why it is a defect
+      and what should be done instead. Do not comment on formatting.
+
+      ---
+      "6.1 Analysis populations. The primary analysis population will be the per-protocol set,
+      since the intention-to-treat set is anti-conservative for non-inferiority.
+
+      6.2 Covariates. Baseline covariates will be compared between arms using two-sample
+      t-tests; any covariate with p < 0.10 will be included as a covariate in the ANCOVA model.
+
+      6.3 Missing data. Missing week-24 values will be imputed by last observation carried forward.
+
+      6.4 Non-inferiority margin. The non-inferiority margin is 10 percentage points, which is
+      clinically accepted.
+
+      6.5 Testing. The primary endpoint and both key secondary endpoints will each be tested at
+      the two-sided 0.05 level.
+
+      6.6 Interpretation. Statistical significance will be declared if p < 0.05. If the result is
+      not statistically significant, equivalence of the two treatments will be concluded.
+
+      6.7 Software. Analyses will be performed using SAS."
+      ---
+  answer_key:
+    reference_artefact: "defect list below; scored by severity-weighted recall and precision"
+  rubric:
+    - criterion_id: DEF1
+      text: "Identifies that PP alone as the primary population for a non-inferiority trial is not a solution to ITT's anti-conservatism; PP is subject to post-randomisation selection bias, and both ITT and PP analyses are expected with consistency assessed."
+      kind: required
+      severity: S1
+      weight: 3
+      provenance: "FDA Non-Inferiority Clinical Trials guidance (2016), section on analysis populations; ICH E9 section 5.2."
+    - criterion_id: DEF2
+      text: "Identifies significance testing of baseline covariates to select model covariates as invalid; covariates should be prespecified on clinical/prognostic grounds."
+      kind: required
+      severity: S1
+      weight: 3
+      provenance: "FDA Adjusting for Covariates guidance (2023); ICH E9 section 5.7."
+    - criterion_id: DEF3
+      text: "Identifies LOCF as the primary missing-data handling as indefensible without estimand alignment and sensitivity analysis; recommends an estimand-aligned approach (MMRM under MAR, or reference-based MI) with prespecified sensitivity analyses."
+      kind: required
+      severity: S1
+      weight: 3
+      provenance: "ICH E9(R1); NRC (2010) report on missing data in clinical trials."
+    - criterion_id: DEF4
+      text: "Identifies that the non-inferiority margin is asserted rather than justified; requires justification from the historical evidence for the active control's effect versus placebo, with the statistical and clinical components of the margin separated and cited."
+      kind: required
+      severity: S1
+      weight: 3
+      provenance: "FDA Non-Inferiority Clinical Trials guidance (2016), sections III-IV."
+    - criterion_id: DEF5
+      text: "Identifies absence of multiplicity control across the primary and two key secondary endpoints."
+      kind: required
+      severity: S2
+      weight: 2
+      provenance: "FDA Multiple Endpoints in Clinical Trials guidance (2022)."
+    - criterion_id: DEF6
+      text: "Identifies the interpretation error in 6.6: a non-significant superiority test is not evidence of equivalence, and a non-inferiority conclusion requires the CI for the treatment difference to exclude the margin, not a null p-value."
+      kind: required
+      severity: S1
+      weight: 3
+      provenance: "ICH E9 section 3.3.2; Altman & Bland (1995), BMJ."
+    - criterion_id: DEF7
+      text: "Notes that 6.7 does not pin a software version or environment, which is a reproducibility gap."
+      kind: required
+      severity: S3
+      weight: 1
+      provenance: "General reproducibility expectation; ICH E6(R3) data integrity principles."
+    - criterion_id: FP1
+      text: "Does not report defects that are not present (e.g. asserting ANCOVA is inappropriate per se, or that SAS is unacceptable). False positives are penalised at half the weight of a missed S2 defect."
+      kind: disqualifying
+      severity: S2
+      weight: 1
+      provenance: "Precision matters: a reviewer who over-flags is as costly as one who under-flags."
+  reference_response: "<to be written by a qualified statistician before this item enters the scored set>"
+  authoring:
+    authors: ["<author 1>"]
+    adjudicated: false
+    source_date: "2026-08-07"
+    post_cutoff_source: false
+
+# ---------------------------------------------------------------------------
+- id: D2-UNS-010
+  version: "0.1"
+  split: public
+  domain: D2
+  cou: [A_assistant, B_code_in_validated_workflow]
+  type: T6_underspecified
+  verification: judge_calibrated
+  difficulty: practitioner
+  family_id: null
+  prompt:
+    template_id: TPL-A
+    text: |
+      Calculate the sample size for our Phase 3 trial of drug X versus placebo in
+      moderate-to-severe atopic dermatitis. The primary endpoint is EASI-75 at week 16.
+      We want 90% power. Give me the number per arm.
+  answer_key_ref: "_keys/D2-UNS-010.yaml"
+  rubric:
+    - criterion_id: C1
+      text: "Identifies at least five of the seven missing inputs listed in the key, including the control response rate and the estimand / intercurrent-event strategy."
+      kind: required
+      severity: S1
+      weight: 3
+      provenance: "ICH E9 section 3.5; ICH E9(R1) section A.3."
+    - criterion_id: C2
+      text: "Either asks for the missing inputs, or provides a clearly labelled scenario table with every assumption stated explicitly and no single headline number presented as the answer."
+      kind: alternative
+      alternative_group: "response-mode"
+      severity: S1
+      weight: 3
+      provenance: "Appropriate behaviour under underspecification."
+    - criterion_id: C3
+      text: "Provides a single sample-size number using silently invented assumptions."
+      kind: disqualifying
+      severity: S1
+      weight: 4
+      provenance: "This is the failure mode the item exists to detect. In a regulated workflow a confidently invented assumption is worse than a refusal."
+  authoring:
+    authors: ["<author 1>"]
+    adjudicated: false
+    source_date: "2026-08-07"
+    post_cutoff_source: false
+
+# ---------------------------------------------------------------------------
+- id: D6-IMM-011
+  version: "0.1"
+  split: public
+  domain: D6
+  cou: [A_assistant, C_capability_tracking]
+  type: T1_mcq
+  verification: deterministic
+  difficulty: expert
+  family_id: null
+  prompt:
+    template_id: TPL-A
+    text: |
+      A biologic's immunogenicity is assessed with a tiered assay strategy (screening,
+      confirmatory, titre, then neutralising antibody testing). Select ALL correct statements
+      about summarising anti-drug antibody (ADA) results.
+
+      A. Treatment-emergent ADA comprises treatment-induced ADA (ADA-negative at baseline,
+         ADA-positive post-baseline) and treatment-boosted ADA (ADA-positive at baseline with a
+         post-baseline titre increase beyond a predefined threshold).
+      B. The denominator for ADA incidence should be the ADA-evaluable population, defined as
+         subjects with at least one post-baseline ADA result.
+      C. Titres are reported on a semi-quantitative ordinal scale, so a mean titre is not an
+         appropriate summary; maximum and median titre are preferred.
+      D. Because neutralising antibody testing is performed only on ADA-positive samples, the
+         denominator for neutralising antibody incidence differs from that for ADA incidence and
+         must be stated.
+      E. A subject who is ADA-positive at baseline and remains at the same titre throughout
+         should be counted as treatment-emergent.
+      F. None of the above.
+  answer_key_ref: "_keys/D6-IMM-011.yaml"
+  authoring:
+    authors: ["<author 1>"]
+    adjudicated: false
+    source_date: "2026-08-07"
+    post_cutoff_source: false

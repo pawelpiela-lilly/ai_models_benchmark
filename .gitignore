@@ -1,0 +1,25 @@
+# CLAUDE.md rule 4: never commit anything under items/private/ or _keys/.
+items/private/
+_keys/
+
+# Scratch workspaces from cc_runner.py sweeps - regenerated per run, never
+# the source of truth for anything.
+bsb_work/
+
+# R
+.Rproj.user/
+.Rhistory
+.RData
+renv/library/
+renv/staging/
+
+# Python
+__pycache__/
+*.pyc
+.bsb_cache/
+
+# OS/editor noise
+.DS_Store
+
+# Stray upload/extraction artifacts - not the canonical source of anything
+*.zip
