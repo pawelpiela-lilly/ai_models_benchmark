@@ -16,8 +16,14 @@ to destroy by accident.
    the public sources listed in `protocol/BENCHMARK_PROTOCOL.md` §9. If an item stem
    needs a study identifier, invent one.
 4. **Never commit anything under `items/private/`.** It is gitignored; do not override.
-5. **Model versions are pinned by full name**, never by alias. `claude-opus-5`, not
-   `opus`. Aliases float, and a floating alias silently breaks every longitudinal claim.
+5. **Model identifiers are pinned to what this gateway actually resolves stably, and recorded
+   with `claude --version`.** On the public API, that means full names, never aliases
+   (aliases float). **On the Lilly Code gateway this is inverted, confirmed by direct test**:
+   requesting a public full name like `claude-sonnet-5` gets silently substituted with a
+   `system/informational` warning ("restricted by your organization's settings"), while
+   `opus-latest`/`sonnet-latest`/`haiku-latest` each route cleanly to a stable, distinct
+   model. Use the three `-latest` aliases as `--models` here — see
+   `protocol/ADDENDUM_A_claude_code.md` §A.3 and `harness/cc_runner.py`'s `PINNED_MODELS`.
 6. **Never add `--fallback-model` to a scored run.** Silent substitution to another model
    destroys attribution: you would record a score against a model that did not produce it.
 

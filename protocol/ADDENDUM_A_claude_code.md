@@ -64,11 +64,20 @@ Anthropic's Mythos tier (Claude Mythos Preview, Claude Mythos 5) is not publicly
 and cannot be benchmarked without participation in Anthropic's Project Glasswing; exclude
 it and say so, rather than leaving a reader to wonder.
 
-**Pin full names, never aliases.** `--model` accepts `opus`, `sonnet`, `haiku`, `fable`,
-but those resolve to "the latest" and will silently move under you. Every longitudinal
-claim you make depends on this. Record `claude --version` alongside the model string —
-agent-loop behaviour changes between point releases, so the Claude Code version is part of
-the arm definition, not metadata.
+**Pin full names, never aliases — except on this gateway, where it's the reverse.** The
+public guidance is that `--model` accepts `opus`, `sonnet`, `haiku`, `fable`, but those
+resolve to "the latest" and will silently move under you, so full names are the stable
+identifier. **Confirmed by direct test against the Lilly Code gateway that this is inverted
+here.** Requesting `claude-sonnet-5` directly returns a `system/informational` stream-json
+event — `Model "claude-sonnet-5" is restricted by your organization's settings. Using
+opus-latest[1m] instead.` — and silently substitutes a different model. `opus-latest`,
+`sonnet-latest`, and `haiku-latest` each route cleanly with no substitution warning, to
+`claude-opus-4-6`, `claude-sonnet-5`, and `claude-haiku-4-5-20251001` respectively (checked
+by reading back the resolved model on the transcript's `result` line, not just the echoed
+`--model` string in `system/init`). `cc_runner.py`'s `PINNED_MODELS`/`KNOWN_MODELS` reflect
+this: use the three `-latest` aliases as `--models` on this gateway, and record
+`claude --version` alongside the model string regardless — agent-loop behaviour changes
+between point releases, so the Claude Code version is part of the arm definition either way.
 
 **Never pass `--fallback-model` in a scored run.** It exists to fall back automatically when
 the primary model is overloaded or retired. In a benchmark that means silently recording a
@@ -76,7 +85,9 @@ score against a model that did not produce the response. `cc_runner.py` omits th
 cross-checks the model reported in the `system/init` stream event against the requested
 model, flagging `model_mismatch=1`. Those rows are excluded from the primary analysis, not
 averaged in. Watch `system/api_retry` events too: `overloaded` and `model_not_found`
-categories mark degraded runs.
+categories mark degraded runs. On this gateway, the org-level model restriction above is
+exactly the failure mode this check exists to catch — it is not a `cc_runner.py` bug, it is
+the mismatch detector doing its job the first time it had a real mismatch to catch.
 
 ## A.4 Confounds specific to this surface
 
@@ -134,7 +145,11 @@ CLAUDE.md, leaving Bash, file read, and file edit. **Use it for every scored run
 it, a teammate's `~/.claude` hook or a project `.mcp.json` silently enters the measurement
 and the run is not reproducible on another machine. Two consequences: bare mode does not
 read OAuth credentials or the keychain, so set `ANTHROPIC_API_KEY` (or supply
-`apiKeyHelper` via `--settings`); and the project's own `.claude/settings.json` does not
+`apiKeyHelper` via `--settings`) — **on this gateway there is no `ANTHROPIC_API_KEY`;
+`cc_runner.py` passes `--settings {"apiKeyHelper":"lilly-code token"}` on every `--bare`
+invocation instead, confirmed to authenticate without reintroducing anything else `--bare`
+would otherwise skip** (`system/init`'s tool list stays the minimal `Bash`/`Edit`/`Read`/
+`StructuredOutput` set either way); and the project's own `.claude/settings.json` does not
 apply to scored runs, so it cannot be your isolation mechanism (see A.5).
 
 Anthropic's docs note `--bare` will become the default for `-p` in a future release, so

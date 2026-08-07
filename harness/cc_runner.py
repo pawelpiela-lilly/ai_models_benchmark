@@ -38,16 +38,36 @@ USAGE
     # verify command construction and the parser without spending anything
     python3 cc_runner.py --self-test
 
-    # real run
-    export ANTHROPIC_API_KEY=...        # --bare does not use subscription login
+    # real run - see AUTH below for why no ANTHROPIC_API_KEY is needed here
     python3 cc_runner.py \
         --items ../items/seed_items.yaml --split public \
-        --models claude-sonnet-5 claude-opus-5 \
-        --effort medium --replicates 5 \
+        --models opus-latest sonnet-latest --effort medium --replicates 5 \
         --work-root /tmp/bsb_work --keys-dir ../items/_keys \
         --max-budget-usd 0.75 --max-turns 30 --concurrency 6 \
         --out cc_results.csv
+
+AUTH
+
+--bare skips OAuth/keychain login by design (see point 4 below), so it normally
+requires ANTHROPIC_API_KEY. On this gateway that key does not exist; every session
+instead authenticates via `apiKeyHelper` pointed at the `lilly-code token` CLI, which
+is already authorized outside this harness. build_command() passes this through
+`--settings` as an inline JSON string (confirmed to work without a temp file) so
+--bare's isolation is unaffected: no CLAUDE.md, hooks, skills, plugins, or MCP config
+load, only the API key source changes.
+
+This gateway also does NOT honour arbitrary pinned full model names the way the
+public Anthropic docs describe: requesting `claude-sonnet-5` directly returns an
+`informational` stream-json event ("Model \"claude-sonnet-5\" is restricted by your
+organization's settings. Using opus-latest[1m] instead.") and silently substitutes a
+different model - exactly the failure mode point 2 below exists to catch, and it will
+mark such rows model_mismatch=1. What the gateway *does* honour cleanly, confirmed by
+probing each and reading back the resolved model on the result line with no
+substitution warning: `opus-latest` -> `claude-opus-4-6`, `sonnet-latest` ->
+`claude-sonnet-5`, `haiku-latest` -> `claude-haiku-4-5-20251001`. Use these three as
+--models on this gateway; PINNED_MODELS below reflects them, not the public full names.
 """
+
 
 from __future__ import annotations
 
@@ -71,29 +91,33 @@ import yaml
 
 RUNNER_VERSION = "0.1"
 
-# Aliases resolve to "the latest" and therefore drift. Pin full names and record
-# `claude --version` with every run. Verify the current lineup against
-# https://code.claude.com/docs/en/model-config before a scored run.
+# This gateway does not resolve arbitrary full model names the way the public
+# Anthropic docs describe (confirmed: requesting "claude-sonnet-5" directly gets
+# silently substituted with a warning - see AUTH in the module docstring). These
+# three aliases are what actually route cleanly to a stable, distinct model each;
+# treat them as this gateway's pinned names. KNOWN_MODELS maps alias -> resolved
+# model, used for mismatch detection against the transcript's init event.
 KNOWN_MODELS = {
-    "opus-latest": "opus",
-    "sonnet-latest": "sonnet",
-    "haiku-latest": "haiku",
+    "opus-latest": "claude-opus-4-6",
+    "sonnet-latest": "claude-sonnet-5",
+    "haiku-latest": "claude-haiku-4-5-20251001",
 }
 
-# Pinned full names only. Used solely to warn on a scored run; NOT the same set as
-# KNOWN_MODELS above, which exists to resolve *aliases* for mismatch detection. If
-# this warning used KNOWN_MODELS's keys instead, passing an alias would never
-# trigger it - the alias would be "known" and therefore silently accepted.
-PINNED_MODELS = {
-    "claude-opus-5",
-    "claude-sonnet-5",
-    "claude-haiku-4-5-20251001",
-    "claude-fable-5",
-}
+# The identifiers to require on a scored run on this gateway. Unlike the public
+# guidance (pin full names, never aliases), on this gateway the *alias* is the
+# stable identifier - the full names are what get silently substituted. This set
+# intentionally mirrors KNOWN_MODELS's keys, not its values.
+PINNED_MODELS = set(KNOWN_MODELS.keys())
 
 # Denied on every scored run. WebSearch/WebFetch would let the agent retrieve
 # public-split items; mcp__* keeps the tool surface pinned.
 DEFAULT_DENY = ["WebSearch", "WebFetch", "mcp__*"]
+
+# --bare skips OAuth/keychain login. There is no ANTHROPIC_API_KEY on this gateway;
+# every run authenticates through the already-authorized `lilly-code token` CLI via
+# apiKeyHelper instead. Passed via --settings as inline JSON (confirmed to work
+# without a temp file) on every --bare invocation - see AUTH in the module docstring.
+BARE_API_KEY_HELPER_SETTINGS = {"apiKeyHelper": "lilly-code token"}
 
 # Structured output beats regex-scraping a free-text answer. --json-schema makes
 # the agent emit a validated object into `.structured_output`.
@@ -199,6 +223,13 @@ def build_command(arm: Arm, item: dict, prompt_path: Path, session_id: str) -> l
            "--strict-mcp-config"]
     if arm.bare:
         cmd.append("--bare")
+        # --bare does not read OAuth/keychain login by design. This gateway has no
+        # ANTHROPIC_API_KEY; every session instead authenticates through the
+        # lilly-code CLI, already authorized outside this harness. Confirmed this
+        # does not reintroduce anything else --bare would otherwise skip: passing
+        # only apiKeyHelper here still yields the minimal tool set with no
+        # CLAUDE.md/hooks/skills/plugins/MCP loaded (see AUTH in the module docstring).
+        cmd += ["--settings", json.dumps(BARE_API_KEY_HELPER_SETTINGS, separators=(",", ":"))]
     if arm.effort:
         cmd += ["--effort", arm.effort]
     if arm.tools is not None:
@@ -487,7 +518,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--items", type=Path)
     ap.add_argument("--split", default=None)
-    ap.add_argument("--models", nargs="+", default=["claude-sonnet-5"])
+    ap.add_argument("--models", nargs="+", default=["sonnet-latest"])
     ap.add_argument("--effort", nargs="+", default=[None])
     ap.add_argument("--replicates", type=int, default=5)
     ap.add_argument("--work-root", type=Path, default=Path("/tmp/bsb_work"))
@@ -601,11 +632,14 @@ def self_test() -> int:
         print(f"  [{'PASS' if cond else 'FAIL'}] {label}")
 
     print("command construction:")
-    arm = Arm(model="claude-opus-5", effort="high", max_turns=25, max_budget_usd=0.5)
+    arm = Arm(model="opus-latest", effort="high", max_turns=25, max_budget_usd=0.5)
     item = {"id": "D2-GSD-001", "type": "T2_numeric"}
     cmd = build_command(arm, item, Path("/tmp/ws/TASK.md"), "sid")
     check("--bare present", "--bare" in cmd)
-    check("model pinned by full name", cmd[cmd.index("--model") + 1] == "claude-opus-5")
+    check("model pinned to this gateway's identifier", cmd[cmd.index("--model") + 1] == "opus-latest")
+    check("apiKeyHelper passed under --bare (no ANTHROPIC_API_KEY on this gateway)",
+          "--settings" in cmd
+          and json.loads(cmd[cmd.index("--settings") + 1]) == BARE_API_KEY_HELPER_SETTINGS)
     check("--fallback-model absent (no silent substitution)", "--fallback-model" not in cmd)
     check("--dangerously-skip-permissions absent", "--dangerously-skip-permissions" not in cmd)
     check("web tools denied", "WebSearch" in cmd[cmd.index("--disallowedTools") + 1])
@@ -616,7 +650,7 @@ def self_test() -> int:
     check("json schema attached for T2", "--json-schema" in cmd)
     check("stream-json + verbose", "--output-format" in cmd and "--verbose" in cmd)
 
-    web_arm = Arm(model="claude-sonnet-5", allow_web=True)
+    web_arm = Arm(model="sonnet-latest", allow_web=True)
     wcmd = build_command(web_arm, item, Path("/tmp/ws/TASK.md"), "sid")
     check("allow_web lifts only the web denials",
           "WebSearch" not in wcmd[wcmd.index("--disallowedTools") + 1]
