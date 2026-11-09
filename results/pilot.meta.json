@@ -1,12 +1,35 @@
 {
   "runner_version": "0.1",
   "claude_version": "2.1.220 (Claude Code)",
-  "started": "2026-08-07T09:33:33Z",
+  "started": "2026-08-07T12:54:41Z",
   "split": "public",
   "arms": [
     {
+      "model": "sonnet-latest",
+      "effort": "medioum",
+      "bare": true,
+      "tools": null,
+      "allowed_tools": [
+        "Bash",
+        "Read",
+        "Edit",
+        "Write",
+        "Grep",
+        "Glob"
+      ],
+      "denied_tools": [
+        "WebSearch",
+        "WebFetch",
+        "mcp__*"
+      ],
+      "permission_mode": "acceptEdits",
+      "max_turns": 30,
+      "max_budget_usd": 1.0,
+      "allow_web": false
+    },
+    {
       "model": "opus-latest",
-      "effort": "medium",
+      "effort": "medioum",
       "bare": true,
       "tools": null,
       "allowed_tools": [
@@ -28,7 +51,7 @@
       "allow_web": false
     }
   ],
-  "n_items": 11,
+  "n_items": 13,
   "replicates": 2,
   "denied_tools": [
     "WebSearch",
